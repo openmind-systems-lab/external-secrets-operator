@@ -14,7 +14,7 @@ spec:
     fake:
       data:
         - key: /demo/db-password
-          value: local-password-updated
+          value: local-password
 ---
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
