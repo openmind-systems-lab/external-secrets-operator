@@ -1,0 +1,28 @@
+# eso-logger.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eso-logger
+  namespace: eso-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eso-logger
+  template:
+    metadata:
+      labels:
+        app: eso-logger
+    spec:
+      containers:
+        - name: eso-logger
+          image: eso-logger:local
+          imagePullPolicy: Never
+          volumeMounts:
+            - name: db-secret
+              mountPath: /etc/secrets
+              readOnly: true
+      volumes:
+        - name: db-secret
+          secret:
+            secretName: demo-k8s-secret
