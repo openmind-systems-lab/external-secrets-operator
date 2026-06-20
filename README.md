@@ -1,27 +1,60 @@
-# 🔐 External Secrets Operator (ESO) on Docker Desktop Kubernetes
+<p align="center">
+  <img src="https://raw.githubusercontent.com/openmind-systems-lab/.github/main/profile/logo.png" width="350">
+</p>
 
-## 📖 Overview
+<h1 align="center">External Secrets Operator Playground</h1>
 
-This Proof of Concept demonstrates how **External Secrets Operator (ESO)** synchronizes a secret from an external provider into a Kubernetes Secret and how an application can consume secret updates **without requiring a pod restart**.
+<p align="center">
+An Open Source Proof of Concept demonstrating Kubernetes secret synchronization using External Secrets Operator.
+</p>
+
+<p align="center">
+
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen)
+![Proof of Concept](https://img.shields.io/badge/Type-Proof%20of%20Concept-orange)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Secrets%20Management-blue)
+![Association](https://img.shields.io/badge/OpenMind%20Systems%20Lab-Loi%201901-blue)
+
+</p>
 
 ---
 
-## ✅ Prerequisites
+# 📖 Overview
 
-- 🐳 Docker Desktop (Kubernetes enabled)
-- ☸️ kubectl
-- ⛵ Helm
-- 🐋 Docker
+This Proof of Concept demonstrates how **External Secrets Operator (ESO)** synchronizes secrets from an external provider into Kubernetes Secrets.
+
+It also demonstrates how applications consuming **mounted Secret volumes** automatically detect secret updates **without requiring a Pod restart**.
 
 ---
 
-## 🏗️ Architecture
+# 🏗️ Architecture
 
 ![Architecture](media/schema.png)
 
 ---
 
-## 🚀 Install External Secrets Operator
+# 🎯 Objective
+
+This Proof of Concept demonstrates how to:
+
+- Synchronize secrets from an external provider.
+- Automatically create Kubernetes Secrets.
+- Consume secrets through mounted Secret volumes.
+- Rotate secrets without restarting application Pods.
+
+---
+
+# ⚙️ Prerequisites
+
+- Docker Desktop (Kubernetes enabled)
+- kubectl
+- Helm 3
+- Docker
+
+---
+
+# 📦 Install External Secrets Operator
 
 Add the Helm repository:
 
@@ -30,7 +63,7 @@ helm repo add external-secrets https://charts.external-secrets.io
 helm repo update
 ```
 
-Install ESO:
+Install External Secrets Operator:
 
 ```bash
 helm install external-secrets external-secrets/external-secrets \
@@ -39,24 +72,33 @@ helm install external-secrets external-secrets/external-secrets \
   --set installCRDs=true
 ```
 
-Verify the installation:
-
-```bash
-kubectl get pods -n external-secrets
-kubectl get crd | grep external-secrets
-```
-
 ---
 
-## 🔑 Deploy the Fake Provider
+# 🔒 Deploy the Demo Environment
 
-Deploy the resources:
+Deploy the fake provider and External Secret resources:
 
 ```bash
 kubectl apply -f eso-test.yaml
 ```
 
-Verify that the External Secret is synchronized:
+---
+
+# 🔍 Verification
+
+Verify that External Secrets Operator is running:
+
+```bash
+kubectl get pods -n external-secrets
+```
+
+Verify that the CRDs have been installed:
+
+```bash
+kubectl get crd | grep external-secrets
+```
+
+Verify that the External Secret has been synchronized:
 
 ```bash
 kubectl get externalsecret -n eso-test
@@ -78,7 +120,7 @@ super-local-password
 
 ---
 
-## 🛠️ Build the Go Application
+# 🏗️ Build the Demo Application
 
 Build the Docker image:
 
@@ -88,9 +130,9 @@ docker build -t eso-logger:local .
 
 ---
 
-## 🚢 Deploy the Application
+# 🚀 Deploy the Demo Application
 
-Deploy the logger:
+Deploy the application:
 
 ```bash
 kubectl apply -f eso-logger.yaml
@@ -110,7 +152,51 @@ DB_PASSWORD=super-local-password
 
 ---
 
-## 🐳 Docker Desktop Note
+# 🧪 Testing
+
+Update the password inside **eso-test.yaml**:
+
+```yaml
+value: super-local-password-changed
+```
+
+Apply the updated configuration:
+
+```bash
+kubectl apply -f eso-test.yaml
+```
+
+Verify that the Kubernetes Secret has been updated:
+
+```bash
+kubectl get secret demo-k8s-secret \
+  -n eso-test \
+  -o jsonpath='{.data.DB_PASSWORD}' | base64 -d
+```
+
+Expected output:
+
+```text
+super-local-password-changed
+```
+
+Continue watching the application logs:
+
+```bash
+kubectl logs -n eso-test deploy/eso-logger -f
+```
+
+Expected output:
+
+```text
+DB_PASSWORD=super-local-password
+DB_PASSWORD=super-local-password
+DB_PASSWORD=super-local-password-changed
+```
+
+---
+
+# 🐳 Docker Desktop Note
 
 Some Docker Desktop Kubernetes installations cannot access locally built images and may return:
 
@@ -142,85 +228,28 @@ kubectl logs -n eso-test deploy/eso-logger -f
 
 ---
 
-## 🔄 Update the Password
+# 📚 What You Will Learn
 
-Modify the value inside `eso-test.yaml`:
+After completing this Proof of Concept, you will understand how to:
 
-```yaml
-value: super-local-password-changed
-```
-
-Apply the changes:
-
-```bash
-kubectl apply -f eso-test.yaml
-```
-
-Verify that ESO updated the Kubernetes Secret:
-
-```bash
-kubectl get secret demo-k8s-secret \
-  -n eso-test \
-  -o jsonpath='{.data.DB_PASSWORD}' | base64 -d
-```
-
-Expected output:
-
-```text
-super-local-password-changed
-```
-
-Continue watching the application logs:
-
-```bash
-kubectl logs -n eso-test deploy/eso-logger -f
-```
-
-After a short delay, the application automatically detects the new password:
-
-```text
-DB_PASSWORD=super-local-password
-DB_PASSWORD=super-local-password
-DB_PASSWORD=super-local-password-changed
-```
+- Install External Secrets Operator using Helm.
+- Synchronize secrets from an external provider.
+- Automatically generate Kubernetes Secrets.
+- Mount Kubernetes Secrets as volumes.
+- Rotate secrets without restarting Pods.
+- Apply Kubernetes secret management best practices.
 
 ---
 
-## ⏱️ Why Isn't the Update Immediate?
+# 🧹 Cleanup
 
-The value of:
-
-```yaml
-refreshInterval: 2s
-```
-
-only controls **how frequently External Secrets Operator synchronizes the external provider into the Kubernetes Secret**.
-
-Once the Kubernetes Secret is updated, the **kubelet** asynchronously refreshes the mounted Secret volume inside the Pod.
-
-Finally, the application reads the updated file during its next polling cycle.
-
-Because of these three independent steps, the application may observe the new value **a few seconds after** the Kubernetes Secret has already been updated.
-
----
-
-## 💡 Best Practice
-
-✅ Read secrets from **mounted Secret volumes** if your application needs to support secret rotation without restarting.
-
-❌ Avoid using **environment variables** for rotating secrets, as they are only populated when the container starts and require a Pod restart to receive updated values.
-
----
-
-## 🧹 Cleanup
-
-Remove the application:
+Delete the application:
 
 ```bash
 kubectl delete -f eso-logger.yaml --ignore-not-found
 ```
 
-Remove the External Secret resources:
+Delete the External Secret resources:
 
 ```bash
 kubectl delete -f eso-test.yaml --ignore-not-found
@@ -245,3 +274,28 @@ kubectl delete namespace external-secrets --ignore-not-found
 ```bash
 docker rmi eso-logger:local
 ```
+
+---
+
+# 📚 References
+
+- https://external-secrets.io
+- https://external-secrets.io/latest/
+
+---
+
+# 🏛 About OpenMind Systems Lab
+
+OpenMind Systems Lab is an independent French non-profit association dedicated to research, experimental development and technical benchmarking in Cloud Native technologies.
+
+Our mission is to produce practical, reproducible and educational Open Source Proofs of Concept covering Kubernetes, Platform Engineering, Distributed Messaging, Infrastructure Security and Artificial Intelligence.
+
+GitHub Organization:
+
+https://github.com/openmind-systems-lab
+
+---
+
+<p align="center">
+Made with ❤️ by OpenMind Systems Lab
+</p>
